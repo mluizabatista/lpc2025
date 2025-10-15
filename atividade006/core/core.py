@@ -78,6 +78,19 @@ class Triangle:
                 self.position[0] += dx
                 self.position[1] += dy
 
+# Ranielly: Faz o triângulo atravessar as bordas e reaparecer do outro lado (wrap around)
+    def wrap_around_screen(self):
+        if self.position[0] < 0:
+            self.position[0] = WIDTH
+        elif self.position[0] > WIDTH:
+            self.position[0] = 0
+
+        if self.position[1] < 0:
+            self.position[1] = HEIGHT
+        elif self.position[1] > HEIGHT:
+            self.position[1] = 0
+
+
     def draw(self, surface):
         pygame.draw.polygon(surface, self.color, self.get_transformed_points())
 
@@ -140,6 +153,11 @@ def game():
 
         player1.move()
         player2.move()
+
+        # Ranielly: garante que atravessem as bordas da tela
+        player1.wrap_around_screen()
+        player2.wrap_around_screen()
+
 
         player1.draw(screen)
         player2.draw(screen)
