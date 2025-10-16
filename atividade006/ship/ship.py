@@ -33,6 +33,10 @@ class Ship(Triangle):
             nose_y = self.position[1] - math.cos(angle_radians) * 25
 
             projectile = Projectile(nose_x, nose_y, self.angle, self.color)
+
+            # 🔹 Registra quem disparou o projétil (necessário para o sistema de colisão)
+            projectile.shooter = self
+
             projectiles.append(projectile)
 
             self.active_projectile = projectile
