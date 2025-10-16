@@ -1,0 +1,11 @@
+# Luiza: Constants (due to circular import) 
+
+WIDTH, HEIGHT = 1000, 800
+FPS = 60
+BACKGROUND_COLOR = (20, 20, 30)
+TRIANGLE_COLOR_1 = (255, 100, 100)
+TRIANGLE_COLOR_2 = (100, 180, 255)
+TRIANGLE_SIZE = 50
+ROTATION_SPEED = 3
+MOVEMENT_SPEED = 5
+BRAKE_MODE = 0  # 0 = continuous, 1 = momentaneous

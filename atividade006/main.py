@@ -1,9 +1,7 @@
 from core.core import game
 
 def main():
-
-    core = game()
-    core.game()
+    game()
 
 if __name__ == "__main__":
     main()

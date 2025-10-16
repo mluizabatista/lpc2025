@@ -2,17 +2,11 @@ import sys
 import math
 import pygame
 
-# Luiza: Constants
+from core.config import *
 
-WIDTH, HEIGHT = 1000, 800
-FPS = 60
-BACKGROUND_COLOR = (20, 20, 30)
-TRIANGLE_COLOR_1 = (255, 100, 100)
-TRIANGLE_COLOR_2 = (100, 180, 255)
-TRIANGLE_SIZE = 50
-ROTATION_SPEED = 3
-MOVEMENT_SPEED = 5
-BRAKE_MODE = 0 # 0 = continuous, 1 = momentary
+from ship.ship import Ship
+from core.triangle import Triangle
+
 
 # Luiza: Rotating functions
 
@@ -26,80 +20,12 @@ def rotate_point(point, angle_degrees):
         x * sin_theta + y * cos_theta,
     )
 
-# Luiza: Triangle class 
-
-class Triangle:
-    def __init__(self, position, color, controls):
-        self.position = [float(position[0]), float(position[1])]
-        self.angle = 0.0
-        self.color = color
-        self.moving = False
-        self.controls = controls
-
-        self.local_points = [
-            (0.0, -TRIANGLE_SIZE),
-            (-TRIANGLE_SIZE / 2.0, TRIANGLE_SIZE / 2.0),
-            (TRIANGLE_SIZE / 2.0, TRIANGLE_SIZE / 2.0),
-        ]
-
-    def get_transformed_points(self):
-        transformed = []
-        for point in self.local_points:
-            rotated = rotate_point(point, self.angle)
-            screen_point = (
-                rotated[0] + self.position[0],
-                rotated[1] + self.position[1],
-            )
-            transformed.append(screen_point)
-        return transformed
-
-    def rotate(self, direction):
-        if direction == "left":
-            self.angle = (self.angle - ROTATION_SPEED) % 360.0
-        elif direction == "right":
-            self.angle = (self.angle + ROTATION_SPEED) % 360.0
-
-    def move(self, direction=None):
-        angle_radians = math.radians(self.angle)
-        dx = math.sin(angle_radians) * MOVEMENT_SPEED
-        dy = -math.cos(angle_radians) * MOVEMENT_SPEED
-
-        if BRAKE_MODE == 0:
-            if direction == "forward":
-                self.moving = True
-            elif direction == "stop":
-                self.moving = False
-
-            if self.moving:
-                self.position[0] += dx
-                self.position[1] += dy
-        else:
-            if direction == "forward":
-                self.position[0] += dx
-                self.position[1] += dy
-
-# Ranielly: Faz o triângulo atravessar as bordas e reaparecer do outro lado (wrap around)
-    def wrap_around_screen(self):
-        if self.position[0] < 0:
-            self.position[0] = WIDTH
-        elif self.position[0] > WIDTH:
-            self.position[0] = 0
-
-        if self.position[1] < 0:
-            self.position[1] = HEIGHT
-        elif self.position[1] > HEIGHT:
-            self.position[1] = 0
-
-
-    def draw(self, surface):
-        pygame.draw.polygon(surface, self.color, self.get_transformed_points())
-
 # Luiza: Main function
 
 def game():
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Dois Jogadores — Triângulos")
+    pygame.display.set_caption("Combat")
     clock = pygame.time.Clock()
 
     controls_p1 = {
@@ -117,8 +43,10 @@ def game():
 
     # Luiza: Players entity (triangle) initialization
 
-    player1 = Triangle((WIDTH * 0.3, HEIGHT / 2), TRIANGLE_COLOR_1, controls_p1)
-    player2 = Triangle((WIDTH * 0.7, HEIGHT / 2), TRIANGLE_COLOR_2, controls_p2)
+    player1 = Ship((WIDTH * 0.3, HEIGHT / 2), TRIANGLE_COLOR_1, controls_p1)
+    player2 = Ship((WIDTH * 0.7, HEIGHT / 2), TRIANGLE_COLOR_2, controls_p2)
+
+    # Luiza: Main loop
 
     running = True
     while running:
