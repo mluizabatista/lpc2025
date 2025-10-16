@@ -12,9 +12,10 @@ def rotate_point(point, angle_degrees):
         x * sin_theta + y * cos_theta,
     )
 
-# Luiza: Triangle class 
+# Luiza: Triangle class (due to circular import)
 
 class Triangle:
+    
     def __init__(self, position, color, controls):
         self.position = [float(position[0]), float(position[1])]
         self.angle = 0.0

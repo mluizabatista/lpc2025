@@ -9,3 +9,4 @@ TRIANGLE_SIZE = 50
 ROTATION_SPEED = 3
 MOVEMENT_SPEED = 5
 BRAKE_MODE = 0  # 0 = continuous, 1 = momentaneous
+BALL_RADIUS = 10

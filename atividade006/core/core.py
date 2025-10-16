@@ -11,10 +11,13 @@ from core.triangle import Triangle
 # Luiza: Rotating functions
 
 def rotate_point(point, angle_degrees):
+
     angle_radians = math.radians(angle_degrees)
     x, y = point
+
     cos_theta = math.cos(angle_radians)
     sin_theta = math.sin(angle_radians)
+
     return (
         x * cos_theta - y * sin_theta,
         x * sin_theta + y * cos_theta,
@@ -23,22 +26,28 @@ def rotate_point(point, angle_degrees):
 # Luiza: Main function
 
 def game():
+
     pygame.init()
+
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Combat")
     clock = pygame.time.Clock()
 
     controls_p1 = {
+
         "forward": pygame.K_w,
         "back": pygame.K_s,
         "left": pygame.K_a,
         "right": pygame.K_d
+
     }
     controls_p2 = {
+
         "forward": pygame.K_UP,
         "back": pygame.K_DOWN,
         "left": pygame.K_LEFT,
         "right": pygame.K_RIGHT
+
     }
 
     # Luiza: Players entity (triangle) initialization
@@ -48,14 +57,26 @@ def game():
 
     # Luiza: Main loop
 
+    projectiles = []
     running = True
+
     while running:
+
         clock.tick(FPS)
         screen.fill(BACKGROUND_COLOR)
 
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 running = False
+
+            elif event.type == pygame.KEYDOWN:
+
+                if event.key == pygame.K_SPACE:
+                    player1.shoot(projectiles)
+
+                elif event.key == pygame.K_RETURN:
+                    player2.shoot(projectiles)
 
         keys = pygame.key.get_pressed()
 
@@ -63,19 +84,26 @@ def game():
 
         if keys[player1.controls["left"]]:
             player1.rotate("left")
+
         if keys[player1.controls["right"]]:
             player1.rotate("right")
+
         if keys[player1.controls["forward"]]:
             player1.move("forward")
+
         if keys[player1.controls["back"]]:
             player1.move("stop")
 
+
         if keys[player2.controls["left"]]:
             player2.rotate("left")
+
         if keys[player2.controls["right"]]:
             player2.rotate("right")
+
         if keys[player2.controls["forward"]]:
             player2.move("forward")
+
         if keys[player2.controls["back"]]:
             player2.move("stop")
 
@@ -86,9 +114,24 @@ def game():
         player1.wrap_around_screen()
         player2.wrap_around_screen()
 
-
         player1.draw(screen)
         player2.draw(screen)
+
+        for projectile in projectiles[:]:
+
+            projectile.move()
+            projectile.draw(screen)
+
+            if projectile.is_expired():
+
+                if player1.active_projectile == projectile:
+                    player1.active_projectile = None
+
+                if player2.active_projectile == projectile:
+                    player2.active_projectile = None
+
+                projectiles.remove(projectile)
+
 
         pygame.display.flip()
 
