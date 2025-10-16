@@ -150,6 +150,8 @@ def game():
                 if player2.active_projectile == projectile:
                     player2.active_projectile = None
 
+        player1.draw_clouds(screen)
+
         pygame.display.flip()
 
     pygame.quit()
