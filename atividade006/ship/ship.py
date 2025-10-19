@@ -5,6 +5,7 @@ from core.triangle import Triangle
 from core.projectile import Projectile
 import math
 import pygame
+import time # <-- Módulo 'time' importado
 
 class Ship(Triangle):
 
@@ -12,6 +13,43 @@ class Ship(Triangle):
         super().__init__(position, color, controls)
         self.controls = controls
         self.active_projectile = None
+
+        # --- ADICIONADO: Variáveis para o sistema de dano ---
+        self.is_disabled = False          # A nave começa funcionando normalmente
+        self.disabled_timer = 0           # Timer para o tempo de desativação
+        self.SPIN_SPEED = 15              # Velocidade do giro quando atingido
+        self.last_update = time.time()    # Para controlar o tempo do timer
+
+    # --- ADICIONADO: Método chamado quando a nave é atingida ---
+    def take_damage(self, duration_seconds=1):
+        """Ativa o estado de 'dano' na nave."""
+        if not self.is_disabled:
+            self.is_disabled = True
+            self.disabled_timer = duration_seconds
+            print("Nave atingida! Girando por 2 segundos.")
+
+    # --- ADICIONADO: Método que atualiza o estado da nave a cada frame ---
+    def update(self):
+        """Controla a lógica da nave, incluindo o estado de dano."""
+        now = time.time()
+        delta_time = now - self.last_update
+        self.last_update = now
+
+        if self.is_disabled:
+            # Se a nave estiver desabilitada, ela gira sem parar
+            self.angle = (self.angle + self.SPIN_SPEED) % 360.0
+            
+            # Diminui o timer
+            self.disabled_timer -= delta_time
+            
+            # Se o tempo acabou, reativa a nave
+            if self.disabled_timer <= 0:
+                self.is_disabled = False
+                print("Controle restaurado!")
+        
+        # Chama a lógica de movimento da classe pai
+        super().move()
+        self.wrap_around_screen()
 
     def wrap_around_screen(self):
         if self.position[0] < 0:
@@ -25,8 +63,12 @@ class Ship(Triangle):
             self.position[1] = 0
 
     def shoot(self, projectiles):
+        # --- MODIFICADO: Impede o tiro enquanto estiver desabilitado ---
+        if self.is_disabled:
+            return
+
         if self.active_projectile is None or self.active_projectile.is_expired():
-             self.active_projectile = None # Libera o tiro se o anterior expirou
+            self.active_projectile = None
 
         if self.active_projectile is None:
             angle_radians = math.radians(self.angle)
@@ -34,7 +76,6 @@ class Ship(Triangle):
             nose_x = self.position[0] + math.sin(angle_radians) * 25
             nose_y = self.position[1] - math.cos(angle_radians) * 25
 
-            # --- MODIFICADO: Passa 'self' como o atirador ao criar o projétil ---
             projectile = Projectile(nose_x, nose_y, self.angle, self.color, shooter=self)
             
             projectiles.append(projectile)

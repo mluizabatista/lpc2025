@@ -14,7 +14,6 @@ def game():
     pygame.display.set_caption("Combat")
     clock = pygame.time.Clock()
 
-    # --- ADICIONADO: Configuração da fonte para o placar ---
     try:
         score_font = pygame.font.Font(None, 50)
     except pygame.error:
@@ -44,21 +43,23 @@ def game():
 
         keys = pygame.key.get_pressed()
 
-        if keys[player1.controls["left"]]: player1.rotate("left")
-        if keys[player1.controls["right"]]: player1.rotate("right")
-        if keys[player1.controls["forward"]]: player1.move("forward")
-        if keys[player1.controls["back"]]: player1.move("stop")
+        # --- MODIFICADO: Controle do Jogador 1 (bloqueado se desabilitado) ---
+        if not player1.is_disabled:
+            if keys[player1.controls["left"]]: player1.rotate("left")
+            if keys[player1.controls["right"]]: player1.rotate("right")
+            if keys[player1.controls["forward"]]: player1.move("forward")
+            if keys[player1.controls["back"]]: player1.move("stop")
         
-        if keys[player2.controls["left"]]: player2.rotate("left")
-        if keys[player2.controls["right"]]: player2.rotate("right")
-        if keys[player2.controls["forward"]]: player2.move("forward")
-        if keys[player2.controls["back"]]: player2.move("stop")
+        # --- MODIFICADO: Controle do Jogador 2 (bloqueado se desabilitado) ---
+        if not player2.is_disabled:
+            if keys[player2.controls["left"]]: player2.rotate("left")
+            if keys[player2.controls["right"]]: player2.rotate("right")
+            if keys[player2.controls["forward"]]: player2.move("forward")
+            if keys[player2.controls["back"]]: player2.move("stop")
 
-        player1.move()
-        player2.move()
-
-        player1.wrap_around_screen()
-        player2.wrap_around_screen()
+        # --- MODIFICADO: Lógica de atualização da nave ---
+        player1.update()
+        player2.update()
 
         player1.draw(screen)
         player2.draw(screen)
@@ -67,7 +68,6 @@ def game():
             projectile.move()
             projectile.draw(screen)
             if projectile.is_expired():
-                # Libera o slot do projétil ativo do jogador
                 if player1.active_projectile == projectile:
                     player1.active_projectile = None
                 if player2.active_projectile == projectile:
@@ -77,30 +77,31 @@ def game():
         # --- LÓGICA DE COLISÃO E PONTUAÇÃO ATUALIZADA ---
         for proj in projectiles[:]:
             proj_rect = pygame.Rect(proj.x - BALL_RADIUS, proj.y - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2)
-
-            # Define um retângulo de colisão para os jogadores
-            # Usamos o tamanho TRIANGLE_SIZE para criar uma caixa de colisão aproximada
             p1_rect = pygame.Rect(player1.position[0] - TRIANGLE_SIZE, player1.position[1] - TRIANGLE_SIZE, TRIANGLE_SIZE * 2, TRIANGLE_SIZE * 2)
             p2_rect = pygame.Rect(player2.position[0] - TRIANGLE_SIZE, player2.position[1] - TRIANGLE_SIZE, TRIANGLE_SIZE * 2, TRIANGLE_SIZE * 2)
             
             # Verifica colisão com player 1
             if proj.shooter != player1 and p1_rect.colliderect(proj_rect):
                 proj.shooter.score += 1
+                # --- ADICIONADO: Aplica o dano no player 1 ---
+                player1.take_damage()
+                
                 projectiles.remove(proj)
-                # Libera o slot de tiro de quem foi atingido
                 if player1.active_projectile == proj: player1.active_projectile = None
                 if player2.active_projectile == proj: player2.active_projectile = None
-                continue # Pula para o próximo projétil
+                continue 
             
             # Verifica colisão com player 2
             if proj.shooter != player2 and p2_rect.colliderect(proj_rect):
                 proj.shooter.score += 1
+                # --- ADICIONADO: Aplica o dano no player 2 ---
+                player2.take_damage()
+
                 projectiles.remove(proj)
-                # Libera o slot de tiro de quem foi atingido
                 if player1.active_projectile == proj: player1.active_projectile = None
                 if player2.active_projectile == proj: player2.active_projectile = None
 
-        # --- ADICIONADO: Desenha o placar na tela ---
+        # Desenha o placar
         p1_score_text = score_font.render(str(player1.score), True, player1.color)
         p2_score_text = score_font.render(str(player2.score), True, player2.color)
         
