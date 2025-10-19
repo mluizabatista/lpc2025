@@ -22,13 +22,16 @@ class Triangle:
         self.color = color
         self.moving = False
         self.controls = controls
-        # --- ADICIONADO: Inicia a pontuação de cada jogador ---
         self.score = 0
 
+        # --- A ÚNICA MUDANÇA É AQUI ---
+        # Trocamos os 3 pontos de um triângulo por 4 pontos que formam uma nave.
+        size = TRIANGLE_SIZE
         self.local_points = [
-            (0.0, -TRIANGLE_SIZE),
-            (-TRIANGLE_SIZE / 2.0, TRIANGLE_SIZE / 2.0),
-            (TRIANGLE_SIZE / 2.0, TRIANGLE_SIZE / 2.0),
+            (0, -size),                      # Ponto 0: Nariz da nave (ponta de cima)
+            (-size / 2, size / 2),           # Ponto 1: Canto inferior esquerdo (asa)
+            (0, size / 4),                   # Ponto 2: Recuo central da base (motor)
+            (size / 2, size / 2),            # Ponto 3: Canto inferior direito (asa)
         ]
 
     def get_transformed_points(self):
