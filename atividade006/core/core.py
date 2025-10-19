@@ -43,21 +43,20 @@ def game():
 
         keys = pygame.key.get_pressed()
 
-        # --- MODIFICADO: Controle do Jogador 1 (bloqueado se desabilitado) ---
+        # --- MODIFICADO: Controles de aceleração e freio REMOVIDOS ---
+        # As naves agora se movem constantemente, então só precisamos ler as teclas de rotação.
+        
+        # Controle do Jogador 1 (apenas rotação)
         if not player1.is_disabled:
             if keys[player1.controls["left"]]: player1.rotate("left")
             if keys[player1.controls["right"]]: player1.rotate("right")
-            if keys[player1.controls["forward"]]: player1.move("forward")
-            if keys[player1.controls["back"]]: player1.move("stop")
         
-        # --- MODIFICADO: Controle do Jogador 2 (bloqueado se desabilitado) ---
+        # Controle do Jogador 2 (apenas rotação)
         if not player2.is_disabled:
             if keys[player2.controls["left"]]: player2.rotate("left")
             if keys[player2.controls["right"]]: player2.rotate("right")
-            if keys[player2.controls["forward"]]: player2.move("forward")
-            if keys[player2.controls["back"]]: player2.move("stop")
 
-        # --- MODIFICADO: Lógica de atualização da nave ---
+        # A função update chama o novo método move(), que aplica o movimento constante.
         player1.update()
         player2.update()
 
@@ -74,29 +73,23 @@ def game():
                     player2.active_projectile = None
                 projectiles.remove(projectile)
         
-        # --- LÓGICA DE COLISÃO E PONTUAÇÃO ATUALIZADA ---
+        # Lógica de colisão e pontuação (permanece a mesma)
         for proj in projectiles[:]:
             proj_rect = pygame.Rect(proj.x - BALL_RADIUS, proj.y - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2)
             p1_rect = pygame.Rect(player1.position[0] - TRIANGLE_SIZE, player1.position[1] - TRIANGLE_SIZE, TRIANGLE_SIZE * 2, TRIANGLE_SIZE * 2)
             p2_rect = pygame.Rect(player2.position[0] - TRIANGLE_SIZE, player2.position[1] - TRIANGLE_SIZE, TRIANGLE_SIZE * 2, TRIANGLE_SIZE * 2)
             
-            # Verifica colisão com player 1
             if proj.shooter != player1 and p1_rect.colliderect(proj_rect):
                 proj.shooter.score += 1
-                # --- ADICIONADO: Aplica o dano no player 1 ---
                 player1.take_damage()
-                
                 projectiles.remove(proj)
                 if player1.active_projectile == proj: player1.active_projectile = None
                 if player2.active_projectile == proj: player2.active_projectile = None
                 continue 
             
-            # Verifica colisão com player 2
             if proj.shooter != player2 and p2_rect.colliderect(proj_rect):
                 proj.shooter.score += 1
-                # --- ADICIONADO: Aplica o dano no player 2 ---
                 player2.take_damage()
-
                 projectiles.remove(proj)
                 if player1.active_projectile == proj: player1.active_projectile = None
                 if player2.active_projectile == proj: player2.active_projectile = None
@@ -104,7 +97,6 @@ def game():
         # Desenha o placar
         p1_score_text = score_font.render(str(player1.score), True, player1.color)
         p2_score_text = score_font.render(str(player2.score), True, player2.color)
-        
         screen.blit(p1_score_text, (30, 20))
         screen.blit(p2_score_text, (WIDTH - p2_score_text.get_width() - 30, 20))
 

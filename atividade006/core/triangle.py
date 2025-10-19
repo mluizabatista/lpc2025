@@ -20,12 +20,10 @@ class Triangle:
         self.position = [float(position[0]), float(position[1])]
         self.angle = 0.0
         self.color = color
-        self.moving = False
+        # --- REMOVIDO: A variável 'self.moving' não é mais necessária ---
         self.controls = controls
         self.score = 0
 
-        # --- A ÚNICA MUDANÇA É AQUI ---
-        # Trocamos os 3 pontos de um triângulo por 4 pontos que formam uma nave.
         size = TRIANGLE_SIZE
         self.local_points = [
             (0, -size),                      # Ponto 0: Nariz da nave (ponta de cima)
@@ -51,24 +49,15 @@ class Triangle:
         elif direction == "right":
             self.angle = (self.angle + ROTATION_SPEED) % 360.0
 
+    # --- MODIFICADO: Lógica de movimento simplificada para propulsão constante ---
     def move(self, direction=None):
+        """Aplica movimento constante para frente, ignorando qualquer direção."""
         angle_radians = math.radians(self.angle)
         dx = math.sin(angle_radians) * MOVEMENT_SPEED
         dy = -math.cos(angle_radians) * MOVEMENT_SPEED
 
-        if BRAKE_MODE == 0:
-            if direction == "forward":
-                self.moving = True
-            elif direction == "stop":
-                self.moving = False
-
-            if self.moving:
-                self.position[0] += dx
-                self.position[1] += dy
-        else:
-            if direction == "forward":
-                self.position[0] += dx
-                self.position[1] += dy
+        self.position[0] += dx
+        self.position[1] += dy
 
     def draw(self, surface):
         pygame.draw.polygon(surface, self.color, self.get_transformed_points())
