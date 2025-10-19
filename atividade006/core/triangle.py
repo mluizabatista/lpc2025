@@ -1,3 +1,5 @@
+# core/triangle.py
+
 import math
 import pygame
 from core.config import TRIANGLE_SIZE, ROTATION_SPEED, MOVEMENT_SPEED, BRAKE_MODE
@@ -12,8 +14,6 @@ def rotate_point(point, angle_degrees):
         x * sin_theta + y * cos_theta,
     )
 
-# Luiza: Triangle class (due to circular import)
-
 class Triangle:
     
     def __init__(self, position, color, controls):
@@ -22,6 +22,8 @@ class Triangle:
         self.color = color
         self.moving = False
         self.controls = controls
+        # --- ADICIONADO: Inicia a pontuação de cada jogador ---
+        self.score = 0
 
         self.local_points = [
             (0.0, -TRIANGLE_SIZE),
