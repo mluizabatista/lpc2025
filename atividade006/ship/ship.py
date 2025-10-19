@@ -7,7 +7,7 @@ import time
 
 class Ship(Triangle):
 
-    BACKGROUND_COLOR = (135, 206, 235) 
+    BACKGROUND_COLOR = (135, 206, 235)
 
     def __init__(self, position, color, controls):
 
@@ -16,7 +16,8 @@ class Ship(Triangle):
         self.active_projectile = None
         self.is_disabled = False
         self.disabled_timer = 0
-        self.SPIN_SPEED = 15
+        self.SPIN_SPEED = 15              
+        self.DISABLED_SPIN_SPEED = 100    
         self.last_update = time.time()
 
     def take_damage(self, duration_seconds=1):
@@ -25,7 +26,7 @@ class Ship(Triangle):
 
             self.is_disabled = True
             self.disabled_timer = duration_seconds
-     
+
     def update(self):
 
         now = time.time()
@@ -34,13 +35,14 @@ class Ship(Triangle):
 
         if self.is_disabled:
 
-            self.angle = (self.angle + self.SPIN_SPEED) % 360.0
+            self.angle = (self.angle + self.DISABLED_SPIN_SPEED * delta_time * 60) % 360.0
             self.disabled_timer -= delta_time
 
             if self.disabled_timer <= 0:
                 self.is_disabled = False
-        
-        super().move()
+        else:
+            super().move()
+
         self.wrap_around_screen()
 
     def wrap_around_screen(self):
@@ -66,7 +68,7 @@ class Ship(Triangle):
             self.active_projectile = None
 
         if self.active_projectile is None:
-
+            
             angle_radians = math.radians(self.angle)
             nose_x = self.position[0] + math.sin(angle_radians) * 25
             nose_y = self.position[1] - math.cos(angle_radians) * 25
@@ -76,29 +78,21 @@ class Ship(Triangle):
             self.active_projectile = projectile
 
     def draw_ambience(self, surface):
-   
+
         cloud_color = (173, 216, 230)
 
-        pygame.draw.rect(surface, cloud_color, (80, 300, 300, 100))
-        pygame.draw.rect(surface, cloud_color, (40, 310, 100, 70))
-        pygame.draw.rect(surface, cloud_color, (90, 270, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (130, 350, 120, 90))
-        pygame.draw.rect(surface, cloud_color, (190, 280, 120, 80))
-        pygame.draw.rect(surface, cloud_color, (240, 340, 120, 90))
-        pygame.draw.rect(surface, cloud_color, (300, 310, 100, 70))
-        pygame.draw.rect(surface, cloud_color, (360, 290, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (410, 330, 90, 60))
-        pygame.draw.rect(surface, cloud_color, (180, 370, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (100, 330, 90, 60))
+        pygame.draw.ellipse(surface, cloud_color, (50, 300, 320, 140))
+        pygame.draw.ellipse(surface, cloud_color, (80, 280, 160, 100))
+        pygame.draw.ellipse(surface, cloud_color, (180, 320, 160, 90))
+        pygame.draw.ellipse(surface, cloud_color, (130, 350, 180, 100))
+        pygame.draw.ellipse(surface, cloud_color, (240, 300, 140, 80))
+        pygame.draw.ellipse(surface, cloud_color, (90, 340, 120, 70))
+        pygame.draw.ellipse(surface, cloud_color, (180, 270, 120, 70))
 
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 380, 300, 300, 100))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 420, 310, 100, 70))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 370, 270, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 330, 350, 120, 90))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 270, 280, 120, 80))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 220, 340, 120, 90))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 160, 310, 100, 70))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 100, 290, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 50, 330, 90, 60))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 280, 370, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 360, 330, 90, 60))
+        pygame.draw.ellipse(surface, cloud_color, (WIDTH - 380, 300, 320, 140))
+        pygame.draw.ellipse(surface, cloud_color, (WIDTH - 410, 280, 160, 100))
+        pygame.draw.ellipse(surface, cloud_color, (WIDTH - 310, 320, 160, 90))
+        pygame.draw.ellipse(surface, cloud_color, (WIDTH - 360, 350, 180, 100))
+        pygame.draw.ellipse(surface, cloud_color, (WIDTH - 250, 300, 140, 80))
+        pygame.draw.ellipse(surface, cloud_color, (WIDTH - 400, 340, 120, 70))
+        pygame.draw.ellipse(surface, cloud_color, (WIDTH - 310, 270, 120, 70))

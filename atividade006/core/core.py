@@ -108,11 +108,11 @@ def game():
         background_color = getattr(player1, "BACKGROUND_COLOR", (0, 0, 0))
         screen.fill(background_color)
 
-        if hasattr(player1, "draw_ambience"):
-            player1.draw_ambience(screen)
-
         player1.draw(screen)
         player2.draw(screen)
+
+        if hasattr(player1, "draw_ambience"):
+            player1.draw_ambience(screen)
 
         for projectile in projectiles[:]:
 
