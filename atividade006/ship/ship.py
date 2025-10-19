@@ -7,29 +7,36 @@ import time
 
 class Ship(Triangle):
 
+    BACKGROUND_COLOR = (135, 206, 235) 
+
     def __init__(self, position, color, controls):
+
         super().__init__(position, color, controls)
         self.controls = controls
         self.active_projectile = None
-
         self.is_disabled = False
         self.disabled_timer = 0
         self.SPIN_SPEED = 15
         self.last_update = time.time()
 
     def take_damage(self, duration_seconds=1):
+
         if not self.is_disabled:
+
             self.is_disabled = True
             self.disabled_timer = duration_seconds
      
     def update(self):
+
         now = time.time()
         delta_time = now - self.last_update
         self.last_update = now
 
         if self.is_disabled:
+
             self.angle = (self.angle + self.SPIN_SPEED) % 360.0
             self.disabled_timer -= delta_time
+
             if self.disabled_timer <= 0:
                 self.is_disabled = False
         
@@ -37,17 +44,21 @@ class Ship(Triangle):
         self.wrap_around_screen()
 
     def wrap_around_screen(self):
+
         if self.position[0] < 0:
             self.position[0] = WIDTH
+
         elif self.position[0] > WIDTH:
             self.position[0] = 0
 
         if self.position[1] < 0:
             self.position[1] = HEIGHT
+
         elif self.position[1] > HEIGHT:
             self.position[1] = 0
 
     def shoot(self, projectiles):
+
         if self.is_disabled:
             return
 
@@ -55,40 +66,39 @@ class Ship(Triangle):
             self.active_projectile = None
 
         if self.active_projectile is None:
+
             angle_radians = math.radians(self.angle)
-            
             nose_x = self.position[0] + math.sin(angle_radians) * 25
             nose_y = self.position[1] - math.cos(angle_radians) * 25
 
             projectile = Projectile(nose_x, nose_y, self.angle, self.color, shooter=self)
-            
             projectiles.append(projectile)
             self.active_projectile = projectile
 
-    def draw_clouds(self, surface):
+    def draw_ambience(self, surface):
+   
         cloud_color = (173, 216, 230)
-        
-        pygame.draw.rect(surface, cloud_color, (80, 300, 300, 100)) 
-        pygame.draw.rect(surface, cloud_color, (40, 310, 100, 70)) 
+
+        pygame.draw.rect(surface, cloud_color, (80, 300, 300, 100))
+        pygame.draw.rect(surface, cloud_color, (40, 310, 100, 70))
         pygame.draw.rect(surface, cloud_color, (90, 270, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (130, 350, 120, 90)) 
-        pygame.draw.rect(surface, cloud_color, (190, 280, 120, 80)) 
+        pygame.draw.rect(surface, cloud_color, (130, 350, 120, 90))
+        pygame.draw.rect(surface, cloud_color, (190, 280, 120, 80))
         pygame.draw.rect(surface, cloud_color, (240, 340, 120, 90))
-        pygame.draw.rect(surface, cloud_color, (300, 310, 100, 70)) 
-        pygame.draw.rect(surface, cloud_color, (360, 290, 110, 80)) 
-        pygame.draw.rect(surface, cloud_color, (410, 330, 90, 60)) 
+        pygame.draw.rect(surface, cloud_color, (300, 310, 100, 70))
+        pygame.draw.rect(surface, cloud_color, (360, 290, 110, 80))
+        pygame.draw.rect(surface, cloud_color, (410, 330, 90, 60))
         pygame.draw.rect(surface, cloud_color, (180, 370, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (100, 330, 90, 60))  
+        pygame.draw.rect(surface, cloud_color, (100, 330, 90, 60))
 
         pygame.draw.rect(surface, cloud_color, (WIDTH - 380, 300, 300, 100))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 420, 310, 100, 70)) 
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 420, 310, 100, 70))
         pygame.draw.rect(surface, cloud_color, (WIDTH - 370, 270, 110, 80))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 330, 350, 120, 90)) 
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 270, 280, 120, 80)) 
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 220, 340, 120, 90)) 
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 330, 350, 120, 90))
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 270, 280, 120, 80))
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 220, 340, 120, 90))
         pygame.draw.rect(surface, cloud_color, (WIDTH - 160, 310, 100, 70))
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 100, 290, 110, 80)) 
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 50, 330, 90, 60))  
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 280, 370, 110, 80)) 
-        pygame.draw.rect(surface, cloud_color, (WIDTH - 360, 330, 90, 60)) 
-        
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 100, 290, 110, 80))
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 50, 330, 90, 60))
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 280, 370, 110, 80))
+        pygame.draw.rect(surface, cloud_color, (WIDTH - 360, 330, 90, 60))
