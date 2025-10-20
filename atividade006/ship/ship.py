@@ -7,7 +7,7 @@ import time
 
 class Ship(Triangle):
 
-    BACKGROUND_COLOR = (135, 206, 235)
+    BACKGROUND_COLOR = (0, 0, 148)
 
     def __init__(self, position, color, controls):
 
@@ -79,7 +79,7 @@ class Ship(Triangle):
 
     def draw_ambience(self, surface):
 
-        cloud_color = (173, 216, 230)
+        cloud_color = (116, 181, 239)
 
         pygame.draw.ellipse(surface, cloud_color, (50, 300, 320, 140))
         pygame.draw.ellipse(surface, cloud_color, (80, 280, 160, 100))

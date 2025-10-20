@@ -5,6 +5,8 @@ import time
 from core.config import *
 from ship.ship import Ship  
 
+projectiles = []
+
 def create_players(game_type, score_p1=0, score_p2=0):
 
     if game_type == "ship":
@@ -43,6 +45,8 @@ def create_players(game_type, score_p1=0, score_p2=0):
 
 def game():
 
+    global projectiles 
+
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Combat")
@@ -56,7 +60,7 @@ def game():
 
     current_game = "ship"
     player1, player2 = create_players(current_game)
-    projectiles = []
+    projectiles = []  
 
     running = True
 
@@ -72,11 +76,11 @@ def game():
             elif event.type == pygame.KEYDOWN:
 
                 if event.key == pygame.K_ESCAPE:
-                   
+
                     current_game = "tank" if current_game == "ship" else "ship"
                     score_p1, score_p2 = player1.score, player2.score
                     player1, player2 = create_players(current_game, score_p1, score_p2)
-                    projectiles = []
+                    projectiles.clear()
 
                 elif event.key == pygame.K_SPACE:
                     player1.shoot(projectiles)
