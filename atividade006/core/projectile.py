@@ -1,5 +1,3 @@
-# core/projectile.py
-
 import math
 import pygame
 import time
@@ -10,14 +8,14 @@ PROJECTILE_SPEED = 10
 PROJECTILE_LIFETIME = 2.0 
 
 class Projectile:
-    # --- MODIFICADO: Adicionado 'shooter' como parâmetro ---
+
     def __init__(self, x, y, angle, color, shooter):
         self.x = x
         self.y = y
         self.angle = angle
         self.color = color
         self.created_at = time.time()
-        # --- ADICIONADO: Guarda a referência de quem atirou ---
+
         self.shooter = shooter
 
         # Luiza: Bullet direction
