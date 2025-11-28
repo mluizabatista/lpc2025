@@ -1,12 +1,14 @@
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1024
+HEIGHT = 720
 FPS = 60
 
-# default frame size da spritesheet
-FRAME_SIZE = 48
-
-# velocidade de movimento (px/s)
 PLAYER_SPEED = 220
 
-# pasta das sprites (substitua conforme seu projeto)
 SPRITE_DIR = "assets/caramel"
+
+FRAME_SIZE = 48
+
+BORDER_THICKNESS = 10
+TOP_BORDER_THICKNESS = BORDER_THICKNESS + 30
+
+SCALE_FACTOR = 2.0

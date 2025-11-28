@@ -19,8 +19,7 @@ def load_spritesheet(path, frame_width, frame_height):
     sheet_width, sheet_height = sheet.get_size()
 
     if sheet_width % frame_width != 0 or sheet_height % frame_height != 0:
-        print(f"[ERRO] Spritesheet inválida: {path} ({sheet_width}x{sheet_height})")
-        raise ValueError("Spritesheet size not multiple of frame size")
+        print(f"[AVISO] spritesheet {path} com dimensões incomuns: {sheet_width}x{sheet_height} para frame {frame_width}x{frame_height}")
 
     frames = []
     for y in range(0, sheet_height, frame_height):
@@ -28,5 +27,4 @@ def load_spritesheet(path, frame_width, frame_height):
             frame = sheet.subsurface((x, y, frame_width, frame_height)).copy()
             frames.append(frame)
 
-    print(f"[OK] Carregado {len(frames)} frames de {path}")
     return frames
