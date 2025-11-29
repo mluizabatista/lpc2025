@@ -1,254 +1,184 @@
 import pygame
 import random
-from utils import load_spritesheet
-from config import (
-    SPRITE_DIR,
-    FRAME_SIZE,
-    SCALE_FACTOR,
-    PLAYER_SPEED,
-    TOP_BORDER_THICKNESS,
-    BORDER_THICKNESS,
-    WIDTH,
-    HEIGHT
-)
 
-# ---------------------------
-# PLAYER
-# ---------------------------
-class Player(pygame.sprite.Sprite):
-    def __init__(self, game):
-        super().__init__()
-        self.game = game
+def load_spritesheet(image_path, frame_width, frame_height):
+    sheet = pygame.image.load(image_path).convert_alpha()
+    sheet_width, sheet_height = sheet.get_size()
 
-        # carregar animações do player
-        self.anim_idle = load_spritesheet(f"{SPRITE_DIR}/Idle.png", FRAME_SIZE, FRAME_SIZE)
-        self.anim_walk = load_spritesheet(f"{SPRITE_DIR}/Walk.png", FRAME_SIZE, FRAME_SIZE)
-        self.anim_attack = load_spritesheet(f"{SPRITE_DIR}/Attack.png", FRAME_SIZE, FRAME_SIZE)
+    frames = []
+    for y in range(0, sheet_height, frame_height):
+        for x in range(0, sheet_width, frame_width):
 
-        # fallbacks mínimos
-        if not self.anim_idle: self.anim_idle = [pygame.Surface((FRAME_SIZE, FRAME_SIZE))]
-        if not self.anim_walk: self.anim_walk = [pygame.Surface((FRAME_SIZE, FRAME_SIZE))]
-        if not self.anim_attack: self.anim_attack = [pygame.Surface((FRAME_SIZE, FRAME_SIZE))]
+            if x + frame_width > sheet_width or y + frame_height > sheet_height:
+                continue
 
-        self.current_anim = self.anim_idle
-        self.frame = 0
-        self.frame_time = 0.0
-        self.frame_speed = 0.12  # segundos por frame (sensação natural)
+            frame = sheet.subsurface((x, y, frame_width, frame_height))
+            frames.append(frame)
 
-        self.facing_left = False
+    return frames
 
-        self.x = WIDTH // 2
-        self.y = HEIGHT // 2
-        self.speed = PLAYER_SPEED
-        self.scale = SCALE_FACTOR
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, x, y, speed, spritesheet_idle, spritesheet_walk, frame_w, frame_h, groups):
+        super().__init__(groups)
 
-        self.attacking = False
-        self.attack_start = 0.0
-        self.attack_duration = 0.35
-
-        base_img = self.current_anim[0]
-        w, h = base_img.get_size()
-        self.image = pygame.transform.scale(base_img, (int(w*self.scale), int(h*self.scale)))
-        self.rect = self.image.get_rect(center=(self.x, self.y))
-
-    def set_animation(self, anim):
-        if self.current_anim is not anim:
-            self.current_anim = anim
-            self.frame = 0
-            self.frame_time = 0.0
-
-    def handle_input_and_move(self, dt):
-        keys = pygame.key.get_pressed()
-        dx = dy = 0.0
-
-        if keys[pygame.K_w]:
-            dy -= self.speed * dt
-        if keys[pygame.K_s]:
-            dy += self.speed * dt
-        if keys[pygame.K_a]:
-            dx -= self.speed * dt
-            self.facing_left = True
-        if keys[pygame.K_d]:
-            dx += self.speed * dt
-            self.facing_left = False
-
-        self.x += dx
-        self.y += dy
-
-        if keys[pygame.K_SPACE] and not self.attacking:
-            self.attacking = True
-            self.attack_start = pygame.time.get_ticks() / 1000.0
-            self.set_animation(self.anim_attack)
-
-    def update_animation_and_image(self, dt):
-        # timeout do ataque
-        if self.attacking:
-            now = pygame.time.get_ticks() / 1000.0
-            if now - self.attack_start >= self.attack_duration:
-                self.attacking = False
-
-        # Se não atacando, escolhe walk/idle conforme input
-        if not self.attacking:
-            keys = pygame.key.get_pressed()
-            moving = keys[pygame.K_w] or keys[pygame.K_s] or keys[pygame.K_a] or keys[pygame.K_d]
-            self.set_animation(self.anim_walk if moving else self.anim_idle)
-
-        # animação
-        self.frame_time += dt
-        if self.frame_time >= self.frame_speed:
-            self.frame_time -= self.frame_speed
-            self.frame = (self.frame + 1) % len(self.current_anim)
-
-        base_img = self.current_anim[self.frame]
-        w, h = base_img.get_size()
-        scaled = pygame.transform.scale(base_img, (int(w*self.scale), int(h*self.scale)))
-
-        if self.facing_left:
-            scaled = pygame.transform.flip(scaled, True, False)
-
-        self.image = scaled
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-
-        # limites de borda (leva em conta metade do sprite)
-        left_limit = BORDER_THICKNESS + self.rect.width//2 + 1
-        right_limit = WIDTH - (BORDER_THICKNESS + self.rect.width//2 + 1)
-        top_limit = TOP_BORDER_THICKNESS + self.rect.height//2 + 1
-        bottom_limit = HEIGHT - (BORDER_THICKNESS + self.rect.height//2 + 1)
-
-        self.x = max(left_limit, min(self.x, right_limit))
-        self.y = max(top_limit, min(self.y, bottom_limit))
-
-        self.rect.center = (int(self.x), int(self.y))
-
-    def update(self, dt):
-        self.handle_input_and_move(dt)
-        self.update_animation_and_image(dt)
-
-
-# ---------------------------
-# GENERIC NPC CLASS
-# ---------------------------
-class NPC(pygame.sprite.Sprite):
-    """
-    NPC genérico que usa sprites na pasta assets/<folder> com Idle.png e Walk.png.
-    Forneça 'folder' ao instanciar (por exemplo: 'dobermann', 'blackcat', 'orangecat').
-    """
-
-    def __init__(self, folder: str, scale: float = 2.0, speed: float = 120.0):
-        super().__init__()
-
-        self.folder = folder
-        self.anim_idle = load_spritesheet(f"assets/{folder}/Idle.png", FRAME_SIZE, FRAME_SIZE)
-        self.anim_walk = load_spritesheet(f"assets/{folder}/Walk.png", FRAME_SIZE, FRAME_SIZE)
-
-        if not self.anim_idle: self.anim_idle = [pygame.Surface((FRAME_SIZE, FRAME_SIZE))]
-        if not self.anim_walk: self.anim_walk = [pygame.Surface((FRAME_SIZE, FRAME_SIZE))]
-
-        self.current_anim = self.anim_idle
-        self.frame = 0
-        self.frame_time = 0.0
-        self.frame_speed = 0.15
-
-        self.scale = scale
+        self.x = x
+        self.y = y
         self.speed = speed
+
+        self.frame = 0
+        self.frame_time = 0
+        self.frame_speed = 0.09
+
+        self.anim_idle = load_spritesheet(spritesheet_idle, frame_w, frame_h)
+        self.anim_walk = load_spritesheet(spritesheet_walk, frame_w, frame_h)
+
+        if len(self.anim_idle) == 0 or len(self.anim_walk) == 0:
+            print(f"⚠ ERRO: sprites vazios em {spritesheet_idle} ou {spritesheet_walk}")
+
+        self.current_anim = self.anim_idle
+        self.image = self.current_anim[0]
+        self.rect = self.image.get_rect(center=(x, y))
+
+        self.dx = 0
+        self.dy = 0
         self.facing_left = False
 
-        # posição inicial aleatória dentro da área útil (considera margem)
-        margin_x = BORDER_THICKNESS + 64
-        margin_y = TOP_BORDER_THICKNESS + 64
-        self.x = random.randint(margin_x, WIDTH - margin_x)
-        self.y = random.randint(margin_y, HEIGHT - margin_y)
+        self.bounds = None
 
-        self.direction_timer = random.uniform(0.0, 2.0)
-        # dx/dy representam velocidade em px/s (podem ser negativos)
-        self.dx = 0.0
-        self.dy = 0.0
-
-        base_img = self.current_anim[0]
-        w, h = base_img.get_size()
-        self.image = pygame.transform.scale(base_img, (int(w*self.scale), int(h*self.scale)))
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-
-    def choose_new_direction(self):
-        # direção como vetor unitário rotacionado
-        angle = random.uniform(0, 360)
-        v = pygame.math.Vector2(1, 0).rotate(angle)
-        self.dx = v.x * self.speed
-        self.dy = v.y * self.speed
-        self.direction_timer = random.uniform(0.8, 2.5)
-        self.facing_left = self.dx < 0
-
-    def move(self, dt):
-        self.direction_timer -= dt
-        if self.direction_timer <= 0:
-            self.choose_new_direction()
-
-        self.x += self.dx * dt
-        self.y += self.dy * dt
-
-        # limites (centro da entidade)
-        left = BORDER_THICKNESS + self.rect.width//2 + 1
-        right = WIDTH - (BORDER_THICKNESS + self.rect.width//2 + 1)
-        top = TOP_BORDER_THICKNESS + self.rect.height//2 + 1
-        bottom = HEIGHT - (BORDER_THICKNESS + self.rect.height//2 + 1)
-
-        bounced = False
-        if self.x < left:
-            self.x = left
-            self.dx *= -1
-            bounced = True
-        if self.x > right:
-            self.x = right
-            self.dx *= -1
-            bounced = True
-        if self.y < top:
-            self.y = top
-            self.dy *= -1
-            bounced = True
-        if self.y > bottom:
-            self.y = bottom
-            self.dy *= -1
-            bounced = True
-
-        if bounced:
-            self.facing_left = self.dx < 0
+    def set_bounds(self, bounds):
+        self.bounds = bounds
 
     def animate(self, dt):
-        moving = abs(self.dx) > 1e-3 or abs(self.dy) > 1e-3
-        self.current_anim = self.anim_walk if moving else self.anim_idle
+
+        if len(self.current_anim) == 0:
+            return
 
         self.frame_time += dt
         if self.frame_time >= self.frame_speed:
-            self.frame_time -= self.frame_speed
-            self.frame = (self.frame + 1) % len(self.current_anim)
+            self.frame_time = 0
+            self.frame += 1
 
-        base_img = self.current_anim[self.frame]
-        w, h = base_img.get_size()
-        img = pygame.transform.scale(base_img, (int(w*self.scale), int(h*self.scale)))
-        if self.facing_left:
-            img = pygame.transform.flip(img, True, False)
+            if self.frame >= len(self.current_anim):
+                self.frame = 0
 
-        self.image = img
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+            base_img = self.current_anim[self.frame]
+
+            if self.facing_left:
+                base_img = pygame.transform.flip(base_img, True, False)
+
+            self.image = base_img
+            self.rect = self.image.get_rect(center=(self.x, self.y))
+
+    def move(self, dt):
+        self.x += self.dx * self.speed * dt
+        self.y += self.dy * self.speed * dt
+
+        if self.bounds:
+            bx, by, bw, bh = self.bounds
+            if self.x < bx: self.x = bx
+            if self.x > bx + bw: self.x = bx + bw
+            if self.y < by: self.y = by
+            if self.y > by + bh: self.y = by + bh
+
+        self.rect.center = (self.x, self.y)
 
     def update(self, dt):
+        moving = self.dx != 0 or self.dy != 0
+        self.current_anim = self.anim_walk if moving else self.anim_idle
+
+        if self.dx < 0:
+            self.facing_left = True
+        elif self.dx > 0:
+            self.facing_left = False
+
         self.move(dt)
         self.animate(dt)
 
+class Player(Entity):
+    def __init__(self, x, y, groups):
+        super().__init__(
+            x, y,
+            speed=150,
+            spritesheet_idle="assets/caramel/Idle.png",
+            spritesheet_walk="assets/caramel/Walk.png",
+            frame_w=48, frame_h=48,   
+            groups=groups
+        )
 
-# ---------------------------
-# CONCRETE NPC SUBCLASSES
-# ---------------------------
+    def update(self, dt):
+        keys = pygame.key.get_pressed()
 
-class DobermannNPC(NPC):
-    def __init__(self, game=None):
-        # scale e speed pensados para dobermann
-        super().__init__("dobermann", scale=2.0, speed=150.0)
+        self.dx = keys[pygame.K_d] - keys[pygame.K_a]
+        self.dy = keys[pygame.K_s] - keys[pygame.K_w]
 
-class BlackCatNPC(NPC):
-    def __init__(self, game=None):
-        super().__init__("blackcat", scale=2.0, speed=150.0)
+        super().update(dt)
 
-class OrangeCatNPC(NPC):
-    def __init__(self, game=None):
-        super().__init__("orangecat", scale=2.0, speed=150.0)
+
+class DobermannNPC(Entity):
+    def __init__(self, x, y, groups):
+        super().__init__(
+            x, y,
+            speed=100,
+            spritesheet_idle="assets/dobermann/Idle.png",
+            spritesheet_walk="assets/dobermann/Walk.png",
+            frame_w=48, frame_h=48,
+            groups=groups
+        )
+        self.player = None   
+
+    def update(self, dt):
+        if self.player:
+            px, py = self.player.x, self.player.y
+            dx = px - self.x
+            dy = py - self.y
+
+            dist = max(1, (dx**2 + dy**2) ** 0.5)
+
+            self.dx = dx / dist
+            self.dy = dy / dist
+
+        super().update(dt)
+
+
+class BlackCatNPC(Entity):
+    def __init__(self, x, y, groups):
+        super().__init__(
+            x, y,
+            speed=100,
+            spritesheet_idle="assets/blackcat/Idle.png",
+            spritesheet_walk="assets/blackcat/Walk.png",
+            frame_w=48, frame_h=48,
+            groups=groups
+        )
+        self.change_time = 0
+
+    def update(self, dt):
+        self.change_time -= dt
+        if self.change_time <= 0:
+            self.dx = random.choice([-1, 0, 1])
+            self.dy = random.choice([-1, 0, 1])
+            self.change_time = random.uniform(0.5, 1.3)
+
+        super().update(dt)
+
+
+class OrangeCatNPC(Entity):
+    def __init__(self, x, y, groups):
+        super().__init__(
+            x, y,
+            speed=100,
+            spritesheet_idle="assets/orangecat/Idle.png",
+            spritesheet_walk="assets/orangecat/Walk.png",
+            frame_w=48, frame_h=48,
+            groups=groups
+        )
+        self.change_time = 0
+
+    def update(self, dt):
+        self.change_time -= dt
+        if self.change_time <= 0:
+            self.dx = random.choice([-1, 0, 1])
+            self.dy = random.choice([-1, 0, 1])
+            self.change_time = random.uniform(0.5, 1.3)
+
+        super().update(dt)

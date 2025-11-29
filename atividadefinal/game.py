@@ -1,4 +1,5 @@
 import pygame
+import random
 from config import WIDTH, HEIGHT, FPS, BORDER_THICKNESS, TOP_BORDER_THICKNESS
 from sprites import Player, DobermannNPC, BlackCatNPC, OrangeCatNPC
 
@@ -11,41 +12,52 @@ class Game:
 
         self.all_sprites = pygame.sprite.Group()
 
-        # ----- PLAYER -----
-        self.player = Player(self)
-        self.all_sprites.add(self.player)
+        player_x = WIDTH // 2
+        player_y = HEIGHT // 2
+        self.player = Player(player_x, player_y, self.all_sprites)
 
-        # ----- NPCs -----
-        self.spawn_npcs()
-
-        self.running = True
-
-    def spawn_npcs(self):
-        # 5 Dobermanns
-        for _ in range(5):
-            npc = DobermannNPC(self)
-            self.all_sprites.add(npc)
-
-        # 3 Black cats
-        for _ in range(3):
-            npc = BlackCatNPC(self)
-            self.all_sprites.add(npc)
-
-        # 3 Orange cats
-        for _ in range(3):
-            npc = OrangeCatNPC(self)
-            self.all_sprites.add(npc)
-
-    def draw_border(self):
-
-        rect = pygame.Rect(
+        self.bounds = pygame.Rect(
             BORDER_THICKNESS,
             TOP_BORDER_THICKNESS,
             WIDTH - 2 * BORDER_THICKNESS,
             HEIGHT - TOP_BORDER_THICKNESS - BORDER_THICKNESS
         )
+        self.player.set_bounds(self.bounds)
 
-        pygame.draw.rect(self.screen, (255, 255, 255), rect, width=2)
+        self.spawn_npcs()
+
+        for sprite in self.all_sprites:
+            if hasattr(sprite, "set_bounds"):
+                sprite.set_bounds(self.bounds)
+
+        self.running = True
+
+    def spawn_npcs(self):
+        def random_pos(margin=80):
+            left = BORDER_THICKNESS + margin
+            right = WIDTH - BORDER_THICKNESS - margin
+            top = TOP_BORDER_THICKNESS + margin
+            bottom = HEIGHT - BORDER_THICKNESS - margin
+
+            x = random.randint(int(left), int(max(left + 1, right)))
+            y = random.randint(int(top), int(max(top + 1, bottom)))
+            return x, y
+
+        for _ in range(5):
+            x, y = random_pos(margin=80)
+            npc = DobermannNPC(x, y, self.all_sprites)
+            npc.player = self.player    
+
+        for _ in range(3):
+            x, y = random_pos(margin=60)
+            BlackCatNPC(x, y, self.all_sprites)
+
+        for _ in range(3):
+            x, y = random_pos(margin=60)
+            OrangeCatNPC(x, y, self.all_sprites)
+
+    def draw_border(self):
+        pygame.draw.rect(self.screen, (255, 255, 255), self.bounds, width=2)
 
     def run(self):
         while self.running:
