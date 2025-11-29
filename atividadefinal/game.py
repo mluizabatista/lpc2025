@@ -1,6 +1,6 @@
 import pygame
 from config import WIDTH, HEIGHT, FPS, BORDER_THICKNESS, TOP_BORDER_THICKNESS
-from sprites import Player
+from sprites import Player, DobermannNPC
 
 class Game:
     def __init__(self):
@@ -10,15 +10,19 @@ class Game:
         self.clock = pygame.time.Clock()
 
         self.all_sprites = pygame.sprite.Group()
+
         self.player = Player(self)
         self.all_sprites.add(self.player)
+
+        self.dog_npc = DobermannNPC(self)
+        self.all_sprites.add(self.dog_npc)
 
         self.running = True
 
     def draw_border(self):
 
         rect = pygame.Rect(
-            BORDER_THICKNESS,              
+            BORDER_THICKNESS,               
             TOP_BORDER_THICKNESS,          
             WIDTH - 2 * BORDER_THICKNESS, 
             HEIGHT - TOP_BORDER_THICKNESS - BORDER_THICKNESS 
