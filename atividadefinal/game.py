@@ -16,24 +16,29 @@ class Game:
         self.font = pygame.font.SysFont("consolas", 24)
         self.big_font = pygame.font.SysFont("consolas", 64)
 
+        # Grupos
         self.all_sprites = pygame.sprite.Group()
         self.chickens = pygame.sprite.Group()
 
         # Sistema de fases
         self.phase = 1
         self.base_chickens = 4
-        self.n_npcs = 5 + 3 + 3
+        self.n_npcs = 11  # 5 dogs + 3 black cats + 3 orange cats
 
         # Vidas
         self.max_hits = 3
-        self.hits_taken = 0
+        self.lives = self.max_hits
 
-        # PLAYER – posição inicial fixa
+        # Pontuação
+        self.total_score = 0
+        self.phase_score = 0
+
+        # PLAYER – spawn fixo
         self.spawn_x = WIDTH // 2
         self.spawn_y = HEIGHT // 2
         self.player = Player(self.spawn_x, self.spawn_y, self.all_sprites)
 
-        # Limites do mapa
+        # Limites
         self.bounds = pygame.Rect(
             BORDER_THICKNESS,
             TOP_BORDER_THICKNESS,
@@ -42,10 +47,9 @@ class Game:
         )
         self.player.set_bounds(self.bounds)
 
-        # Spawn inicial dos NPCs
+        # Primeira fase
         self.spawn_phase_entities()
 
-        # Delay inicial da fase
         self.phase_delay = 3.0
         self.waiting_phase_start = True
         self.phase_timer = self.phase_delay
@@ -55,8 +59,7 @@ class Game:
 
     # -----------------------------------------------------------
     def random_pos_away_from_player(self, margin, min_distance=150):
-        """Posição aleatória que respeita o mapa e distância mínima do player."""
-        px, py = self.spawn_x, self.spawn_y   # Sempre o spawn fixo
+        px, py = self.spawn_x, self.spawn_y
 
         while True:
             left = BORDER_THICKNESS + margin
@@ -72,17 +75,26 @@ class Game:
 
     # -----------------------------------------------------------
     def respawn_player(self):
-        """Reposiciona o jogador no centro da tela no início da fase."""
         self.player.x = self.spawn_x
         self.player.y = self.spawn_y
         self.player.rect.center = (self.spawn_x, self.spawn_y)
+
+    # -----------------------------------------------------------
+    def reset_phase(self):
+        """Reinicia a fase atual sem alterar nº da fase, vidas ou pontuação total."""
+        self.phase_score = 0  # zera pontuação da fase
+        self.respawn_player()
+        self.spawn_phase_entities()
+
+        self.waiting_phase_start = True
+        self.phase_timer = self.phase_delay
 
     # -----------------------------------------------------------
     def spawn_phase_entities(self):
         self.all_sprites.empty()
         self.chickens.empty()
 
-        # Player sempre primeiro
+        # Player primeiro
         self.all_sprites.add(self.player)
 
         dogs = self.n_npcs // 3
@@ -110,19 +122,20 @@ class Game:
             x, y = self.random_pos_away_from_player(40)
             Chicken(x, y, [self.all_sprites, self.chickens])
 
-        # Aplicar bounds
+        # bounds
         for s in self.all_sprites:
             if hasattr(s, "set_bounds"):
                 s.set_bounds(self.bounds)
 
     # -----------------------------------------------------------
     def next_phase(self):
+        self.total_score += self.phase_score  # agrega pontos ganhos
+        self.phase_score = 0
+
         self.phase += 1
         self.n_npcs += 3
 
-        # Sempre respawnar player no início da fase
         self.respawn_player()
-
         self.spawn_phase_entities()
 
         self.waiting_phase_start = True
@@ -136,9 +149,7 @@ class Game:
         px, py = self.player.x, self.player.y
 
         for ent in list(self.all_sprites):
-            if ent is self.player:
-                continue
-            if ent in self.chickens:
+            if ent is self.player or ent in self.chickens:
                 continue
 
             d = dist((px, py), (ent.x, ent.y))
@@ -151,7 +162,6 @@ class Game:
                 new_y = ent.y + (dy / mag) * 150
 
                 bx, by, bw, bh = self.bounds
-
                 new_x = max(bx, min(new_x, bx + bw))
                 new_y = max(by, min(new_y, by + bh))
 
@@ -162,12 +172,13 @@ class Game:
     # -----------------------------------------------------------
     def handle_chicken_collisions(self):
         for chicken in list(self.chickens):
-            for entity in list(self.all_sprites):
+            for entity in self.all_sprites:
                 if entity is chicken:
                     continue
+
                 if entity.rect.colliderect(chicken.rect):
                     if isinstance(entity, Player):
-                        entity.score += 1000
+                        self.phase_score += 1000
                     chicken.kill()
                     break
 
@@ -180,23 +191,26 @@ class Game:
             return
 
         for entity in self.all_sprites:
-            if entity is self.player:
-                continue
-            if entity in self.chickens:
+            if entity is self.player or entity in self.chickens:
                 continue
 
             if entity.rect.colliderect(self.player.rect):
+
                 if not self.player.is_hurt:
                     self.player.hurt()
-                    self.hits_taken += 1
+                    self.lives -= 1
 
-                if self.hits_taken >= self.max_hits:
+                # sem vidas → game over
+                if self.lives <= 0:
                     self.game_over = True
+                else:
+                    self.reset_phase()   # reinicia a fase atual
+
                 return
 
     # -----------------------------------------------------------
     def draw_score(self):
-        txt = f"{self.player.score:06d}  |  Fase {self.phase}"
+        txt = f"{self.total_score + self.phase_score:06d} | Fase {self.phase} | Vidas: {self.lives}"
         surf = self.font.render(txt, True, (255, 255, 255))
         self.screen.blit(surf, (12, 6))
 
@@ -211,7 +225,6 @@ class Game:
     # -----------------------------------------------------------
     def run(self):
         while self.running:
-
             dt = self.clock.tick(FPS) / 1000
 
             if self.game_over:
@@ -219,25 +232,23 @@ class Game:
                 self.running = False
                 continue
 
-            # Eventos
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                if not self.waiting_phase_start:
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+
+                if not self.waiting_phase_start and event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
                         self.player.bark()
 
-            # -----------------------------
-            # TELA DE ESPERA DA FASE
-            # -----------------------------
+            # --------------------------------------------------
+            #           TELA DE ESPERA DA FASE
+            # --------------------------------------------------
             if self.waiting_phase_start:
                 self.phase_timer -= dt
 
-                # Render da tela com entidades paradas
                 self.screen.fill((30, 30, 30))
                 pygame.draw.rect(self.screen, (255,255,255), self.bounds, 2)
 
-                # Desenhar entidades já spawnadas (paradas)
                 for s in self.all_sprites:
                     self.screen.blit(s.image, s.rect)
 
@@ -255,19 +266,17 @@ class Game:
                     self.waiting_phase_start = False
                 continue
 
-            # -----------------------------
-            # JOGO NORMAL
-            # -----------------------------
+            # --------------------------------------------------
+            #                    GAMEPLAY
+            # --------------------------------------------------
             self.apply_bark_knockback()
             self.all_sprites.update(dt)
             self.handle_chicken_collisions()
             self.handle_player_entity_collisions()
 
-            # Render
             self.screen.fill((30, 30, 30))
             pygame.draw.rect(self.screen, (255,255,255), self.bounds, 2)
             self.draw_score()
-
             self.all_sprites.draw(self.screen)
             pygame.display.flip()
 
