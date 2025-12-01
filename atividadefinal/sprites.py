@@ -117,6 +117,8 @@ class Entity(pygame.sprite.Sprite):
 # =====================================================
 # PLAYER
 # =====================================================
+# (mesmo conteúdo anterior, apenas destacado o trecho alterado)
+
 class Player(Entity):
     def __init__(self, x, y, groups):
         super().__init__(
@@ -128,60 +130,110 @@ class Player(Entity):
             groups=groups
         )
 
+        # ANIMAÇÕES ADICIONAIS
         self.anim_hurt = load_hurt_two_frames("assets/caramel/Hurt.png", 48, 48)
         self.anim_attack = load_spritesheet("assets/caramel/Attack.png", 48, 48)
 
+        # ESTADOS
         self.is_hurt = False
-        self.hurt_timer = 0
+        self.hurt_timer = 0.0
+        self.hurt_duration = 0.45     # tempo do efeito Hurt
 
         self.is_barking = False
-        self.bark_timer = 0
-        self.bark_cd = 0
+        self.bark_timer = 0.0
+        self.bark_duration = 0.35     # ataque dura pouco
+        self.bark_cd = 0.0            # cooldown
 
         self.score = 0
 
-    def bark(self):
-        if self.bark_cd > 0 or self.is_hurt:
-            return
-
-        self.is_barking = True
-        self.bark_timer = 0.4
-        self.bark_cd = 7.0
-
-        self.set_anim(self.anim_attack)
-        self.frame = 0
-
+    # ============================================================
+    # TOMAR DANO → HURT
+    # ============================================================
     def hurt(self):
-        if not self.is_hurt:
-            self.is_hurt = True
-            self.hurt_timer = 0.35
-            self.set_anim(self.anim_hurt)
-            self.frame = 0
-
-    def update(self, dt):
-        keys = pygame.key.get_pressed()
-
-        self.dx = keys[pygame.K_d] - keys[pygame.K_a]
-        self.dy = keys[pygame.K_s] - keys[pygame.K_w]
-
-        if self.bark_cd > 0:
-            self.bark_cd -= dt
-
-        if self.is_barking:
-            self.bark_timer -= dt
-            if self.bark_timer <= 0:
-                self.is_barking = False
-            self.animate(dt)
+        if self.is_hurt:  # evita empilhar animações
             return
+        self.is_hurt = True
+        self.hurt_timer = self.hurt_duration
+        self.set_anim(self.anim_hurt)
+        self.dx = 0
+        self.dy = 0
 
+    # ============================================================
+    # ATAQUE → BARK
+    # ============================================================
+    def bark(self):
+        if self.is_barking or self.bark_cd > 0:
+            return
+        self.is_barking = True
+        self.bark_timer = self.bark_duration
+        self.bark_cd = 0.6  # cooldown
+        self.set_anim(self.anim_attack)
+        self.dx = 0
+        self.dy = 0
+
+    # ============================================================
+    # UPDATE do Player → inclui Hurt e Bark
+    # ============================================================
+    def update(self, dt):
+
+        # -----------------------
+        # TIMER DO HURT
+        # -----------------------
         if self.is_hurt:
             self.hurt_timer -= dt
             if self.hurt_timer <= 0:
                 self.is_hurt = False
+                self.set_anim(self.anim_idle)
             self.animate(dt)
-            return
+            return  # trava movimento
 
-        super().update(dt)
+        # -----------------------
+        # TIMER DO BARK
+        # -----------------------
+        if self.is_barking:
+            self.bark_timer -= dt
+            if self.bark_timer <= 0:
+                self.is_barking = False
+                self.set_anim(self.anim_idle)
+            self.animate(dt)
+            return  # sem movimento
+
+        # Cooldown entre barks
+        if self.bark_cd > 0:
+            self.bark_cd -= dt
+
+        # -----------------------
+        # CONTROLE DO JOGADOR
+        # -----------------------
+        keys = pygame.key.get_pressed()
+        self.dx = (keys[pygame.K_d] - keys[pygame.K_a])
+        self.dy = (keys[pygame.K_s] - keys[pygame.K_w])
+
+        # Normalização
+        if self.dx != 0 or self.dy != 0:
+            mag = max(1, (self.dx*self.dx + self.dy*self.dy)**0.5)
+            self.dx /= mag
+            self.dy /= mag
+
+        # HANDLING DA ORIENTAÇÃO
+        if self.dx < 0:
+            self.facing_left = True
+        if self.dx > 0:
+            self.facing_left = False
+
+        # Movimentar
+        self.move(dt)
+
+        # Animar conforme idle/walk do Entity
+        moving = self.dx != 0 or self.dy != 0
+        if moving:
+            self.set_anim(self.anim_walk)
+        else:
+            self.set_anim(self.anim_idle)
+
+        self.animate(dt)
+
+
 
 
 # =====================================================
