@@ -4,7 +4,7 @@ import random
 
 from config import WIDTH, HEIGHT, FPS, BORDER_THICKNESS, TOP_BORDER_THICKNESS
 from sprites import Player, DobermannNPC, BlackCatNPC, OrangeCatNPC, Chicken
-
+from sound import SoundManager  # Importamos o novo gerenciador
 
 class Game:
     def __init__(self):
@@ -15,6 +15,9 @@ class Game:
 
         self.font = pygame.font.SysFont("consolas", 24)
         self.big_font = pygame.font.SysFont("consolas", 64)
+
+        # Inicializa o Gerenciador de Som
+        self.sound_manager = SoundManager()
 
         # Grupos
         self.all_sprites = pygame.sprite.Group()
@@ -46,6 +49,9 @@ class Game:
             HEIGHT - TOP_BORDER_THICKNESS - BORDER_THICKNESS
         )
         self.player.set_bounds(self.bounds)
+
+        # Variável para controlar o cooldown do som de HISS (para não tocar 60x por segundo)
+        self.hiss_cooldown = 0 
 
         # Primeira fase
         self.spawn_phase_entities()
@@ -170,6 +176,32 @@ class Game:
                 ent.rect.center = (ent.x, ent.y)
 
     # -----------------------------------------------------------
+    def check_cat_proximity_sound(self, dt):
+        """Verifica se há algum gato perto para tocar o Hiss"""
+        # Diminui o cooldown se ele for maior que 0
+        if self.hiss_cooldown > 0:
+            self.hiss_cooldown -= dt
+        
+        # Se ainda estiver em cooldown, não checa nada
+        if self.hiss_cooldown > 0:
+            return
+
+        px, py = self.player.x, self.player.y
+        cat_nearby = False
+
+        for entity in self.all_sprites:
+            # Verifica se é instância de gato (Preto ou Laranja)
+            if isinstance(entity, BlackCatNPC) or isinstance(entity, OrangeCatNPC):
+                d = dist((px, py), (entity.x, entity.y))
+                if d < 60:
+                    cat_nearby = True
+                    break # Se achou um, já basta
+        
+        if cat_nearby:
+            self.sound_manager.play_hiss()
+            self.hiss_cooldown = 2.0  # Só toca de novo após 2 segundos para não 'travar' o som
+
+    # -----------------------------------------------------------
     def handle_chicken_collisions(self):
         for chicken in list(self.chickens):
             for entity in self.all_sprites:
@@ -199,8 +231,11 @@ class Game:
                 if not self.player.is_hurt:
                     self.player.hurt()
                     self.lives -= 1
+                    
+                    # TOCA O SOM DE DANO / REINÍCIO
+                    self.sound_manager.play_hurt()
 
-                # sem vidas → game over
+                # sem vidas -> game over
                 if self.lives <= 0:
                     self.game_over = True
                 else:
@@ -227,6 +262,9 @@ class Game:
         while self.running:
             dt = self.clock.tick(FPS) / 1000
 
+            # Atualiza sons automáticos (barks e meows a cada 5s)
+            self.sound_manager.update()
+
             if self.game_over:
                 self.show_game_over()
                 self.running = False
@@ -239,6 +277,8 @@ class Game:
                 if not self.waiting_phase_start and event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.player.bark()
+                        # TOCA O SOM DO LATIDO DO PLAYER
+                        self.sound_manager.play_player_bark()
 
             # --------------------------------------------------
             #           TELA DE ESPERA DA FASE
@@ -267,10 +307,14 @@ class Game:
                 continue
 
             # --------------------------------------------------
-            #                    GAMEPLAY
+            #                   GAMEPLAY
             # --------------------------------------------------
             self.apply_bark_knockback()
             self.all_sprites.update(dt)
+            
+            # Verifica a proximidade dos gatos para o som HISS
+            self.check_cat_proximity_sound(dt)
+            
             self.handle_chicken_collisions()
             self.handle_player_entity_collisions()
 

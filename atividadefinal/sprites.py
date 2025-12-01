@@ -124,15 +124,15 @@ class Player(Entity):
         super().__init__(
             x, y,
             speed=150,
-            spritesheet_idle="assets/caramel/Idle.png",
-            spritesheet_walk="assets/caramel/Walk.png",
+            spritesheet_idle="assets/sprites/caramel/Idle.png",
+            spritesheet_walk="assets/sprites/caramel/Walk.png",
             frame_w=48, frame_h=48,
             groups=groups
         )
 
         # ANIMAÇÕES ADICIONAIS
-        self.anim_hurt = load_hurt_two_frames("assets/caramel/Hurt.png", 48, 48)
-        self.anim_attack = load_spritesheet("assets/caramel/Attack.png", 48, 48)
+        self.anim_hurt = load_hurt_two_frames("assets/sprites/caramel/Hurt.png", 48, 48)
+        self.anim_attack = load_spritesheet("assets/sprites/caramel/Attack.png", 48, 48)
 
         # ESTADOS
         self.is_hurt = False
@@ -242,8 +242,8 @@ class Player(Entity):
 class DobermannNPC(Entity):
     def __init__(self, x, y, groups):
         super().__init__(x, y, 90,
-            "assets/dobermann/Idle.png",
-            "assets/dobermann/Walk.png",
+            "assets/sprites/dobermann/Idle.png",
+            "assets/sprites/dobermann/Walk.png",
             48, 48, groups)
 
         self.player = None
@@ -264,8 +264,8 @@ class DobermannNPC(Entity):
 class BlackCatNPC(Entity):
     def __init__(self, x, y, groups):
         super().__init__(x, y, 110,
-            "assets/blackcat/Idle.png",
-            "assets/blackcat/Walk.png",
+            "assets/sprites/blackcat/Idle.png",
+            "assets/sprites/blackcat/Walk.png",
             48, 48, groups)
         self.change_time = 0
 
@@ -281,8 +281,8 @@ class BlackCatNPC(Entity):
 class OrangeCatNPC(Entity):
     def __init__(self, x, y, groups):
         super().__init__(x, y, 110,
-            "assets/orangecat/Idle.png",
-            "assets/orangecat/Walk.png",
+            "assets/sprites/orangecat/Idle.png",
+            "assets/sprites/orangecat/Walk.png",
             48, 48, groups)
         self.change_time = 0
 
@@ -302,8 +302,8 @@ class Chicken(Entity):
     def __init__(self, x, y, groups):
         super().__init__(
             x, y, 90,
-            "assets/chicken.png",
-            "assets/chicken.png",
+            "assets/sprites/chicken.png",
+            "assets/sprites/chicken.png",
             32, 32, groups
         )
         self.change_time = 0
