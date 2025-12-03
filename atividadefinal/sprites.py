@@ -29,9 +29,6 @@ def load_hurt_two_frames(path, frame_w, frame_h):
     return frames
 
 
-# =====================================================
-# CLASSE BASE
-# =====================================================
 class Entity(pygame.sprite.Sprite):
     def __init__(self, x, y, speed,
                  spritesheet_idle, spritesheet_walk,
@@ -113,14 +110,9 @@ class Entity(pygame.sprite.Sprite):
         self.move(dt)
         self.animate(dt)
 
-
-# =====================================================
-# PLAYER
-# =====================================================
-# (mesmo conteúdo anterior, apenas destacado o trecho alterado)
-
 class Player(Entity):
-    def __init__(self, x, y, groups):
+  
+    def __init__(self, x, y, groups, manual_control=True):
         super().__init__(
             x, y,
             speed=150,
@@ -129,28 +121,26 @@ class Player(Entity):
             frame_w=48, frame_h=48,
             groups=groups
         )
+        
+        self.manual_control = manual_control
 
-        # ANIMAÇÕES ADICIONAIS
         self.anim_hurt = load_hurt_two_frames("assets/sprites/caramel/Hurt.png", 48, 48)
         self.anim_attack = load_spritesheet("assets/sprites/caramel/Attack.png", 48, 48)
 
-        # ESTADOS
         self.is_hurt = False
         self.hurt_timer = 0.0
-        self.hurt_duration = 0.45     # tempo do efeito Hurt
+        self.hurt_duration = 0.45   
 
         self.is_barking = False
         self.bark_timer = 0.0
-        self.bark_duration = 0.35     # ataque dura pouco
-        self.bark_cd = 0.0            # cooldown
+        self.bark_duration = 0.35  
+        self.bark_cd = 0.0          
 
         self.score = 0
 
-    # ============================================================
-    # TOMAR DANO → HURT
-    # ============================================================
+
     def hurt(self):
-        if self.is_hurt:  # evita empilhar animações
+        if self.is_hurt: 
             return
         self.is_hurt = True
         self.hurt_timer = self.hurt_duration
@@ -158,73 +148,54 @@ class Player(Entity):
         self.dx = 0
         self.dy = 0
 
-    # ============================================================
-    # ATAQUE → BARK
-    # ============================================================
     def bark(self):
         if self.is_barking or self.bark_cd > 0:
             return
         self.is_barking = True
         self.bark_timer = self.bark_duration
-        self.bark_cd = 0.6  # cooldown
+        self.bark_cd = 0.6  
         self.set_anim(self.anim_attack)
         self.dx = 0
         self.dy = 0
 
-    # ============================================================
-    # UPDATE do Player → inclui Hurt e Bark
-    # ============================================================
     def update(self, dt):
 
-        # -----------------------
-        # TIMER DO HURT
-        # -----------------------
         if self.is_hurt:
             self.hurt_timer -= dt
             if self.hurt_timer <= 0:
                 self.is_hurt = False
                 self.set_anim(self.anim_idle)
             self.animate(dt)
-            return  # trava movimento
+            return  
 
-        # -----------------------
-        # TIMER DO BARK
-        # -----------------------
         if self.is_barking:
             self.bark_timer -= dt
             if self.bark_timer <= 0:
                 self.is_barking = False
                 self.set_anim(self.anim_idle)
             self.animate(dt)
-            return  # sem movimento
+            return 
 
-        # Cooldown entre barks
         if self.bark_cd > 0:
             self.bark_cd -= dt
 
-        # -----------------------
-        # CONTROLE DO JOGADOR
-        # -----------------------
-        keys = pygame.key.get_pressed()
-        self.dx = (keys[pygame.K_d] - keys[pygame.K_a])
-        self.dy = (keys[pygame.K_s] - keys[pygame.K_w])
+        if self.manual_control:
+            keys = pygame.key.get_pressed()
+            self.dx = (keys[pygame.K_d] - keys[pygame.K_a])
+            self.dy = (keys[pygame.K_s] - keys[pygame.K_w])
+ 
+            if self.dx != 0 or self.dy != 0:
+                mag = max(1, (self.dx*self.dx + self.dy*self.dy)**0.5)
+                self.dx /= mag
+                self.dy /= mag
 
-        # Normalização
-        if self.dx != 0 or self.dy != 0:
-            mag = max(1, (self.dx*self.dx + self.dy*self.dy)**0.5)
-            self.dx /= mag
-            self.dy /= mag
+            if self.dx < 0:
+                self.facing_left = True
+            if self.dx > 0:
+                self.facing_left = False
 
-        # HANDLING DA ORIENTAÇÃO
-        if self.dx < 0:
-            self.facing_left = True
-        if self.dx > 0:
-            self.facing_left = False
-
-        # Movimentar
         self.move(dt)
 
-        # Animar conforme idle/walk do Entity
         moving = self.dx != 0 or self.dy != 0
         if moving:
             self.set_anim(self.anim_walk)
@@ -233,12 +204,6 @@ class Player(Entity):
 
         self.animate(dt)
 
-
-
-
-# =====================================================
-# NPCs
-# =====================================================
 class DobermannNPC(Entity):
     def __init__(self, x, y, groups):
         super().__init__(x, y, 90,
@@ -294,10 +259,6 @@ class OrangeCatNPC(Entity):
             self.change_time = random.uniform(0.5, 1.3)
         super().update(dt)
 
-
-# =====================================================
-# GALINHA
-# =====================================================
 class Chicken(Entity):
     def __init__(self, x, y, groups):
         super().__init__(

@@ -2,9 +2,10 @@ from math import dist
 import pygame
 import random
 
-from config import WIDTH, HEIGHT, FPS, BORDER_THICKNESS, TOP_BORDER_THICKNESS
+from config import WIDTH, HEIGHT, FPS, BORDER_THICKNESS, TOP_BORDER_THICKNESS, \
+    WHITE, BLACK, BUTTON_COLOR, BUTTON_HOVER_COLOR, BACKGROUND_COLOR
 from sprites import Player, DobermannNPC, BlackCatNPC, OrangeCatNPC, Chicken
-from sound import SoundManager  # Importamos o novo gerenciador
+from sound import SoundManager
 
 class Game:
     def __init__(self):
@@ -13,35 +14,47 @@ class Game:
         pygame.display.set_caption("Caramel Adventures")
         self.clock = pygame.time.Clock()
 
+        try:
+           
+            bg_img = pygame.image.load("assets/background.png").convert()
+
+            self.background = pygame.transform.scale(bg_img, (WIDTH, HEIGHT))
+            self.has_background = True
+        except FileNotFoundError:
+            print("AVISO: 'assets/background.png' não encontrado. Usando cor sólida.")
+            self.has_background = False
+
         self.font = pygame.font.SysFont("consolas", 24)
         self.big_font = pygame.font.SysFont("consolas", 64)
+        self.title_font = pygame.font.SysFont("consolas", 80, bold=True) 
 
-        # Inicializa o Gerenciador de Som
         self.sound_manager = SoundManager()
 
-        # Grupos
         self.all_sprites = pygame.sprite.Group()
         self.chickens = pygame.sprite.Group()
+        self.menu_sprites = pygame.sprite.Group() 
 
-        # Sistema de fases
+        self.in_menu = True 
+        self.play_button = pygame.Rect(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60)
+        
+        self.menu_player = Player(WIDTH//2, HEIGHT//2 - 50, self.menu_sprites, manual_control=False)
+        self.menu_player.dx = 1 
+
         self.phase = 1
         self.base_chickens = 4
-        self.n_npcs = 11  # 5 dogs + 3 black cats + 3 orange cats
+        self.n_npcs = 11  
 
-        # Vidas
         self.max_hits = 3
         self.lives = self.max_hits
 
-        # Pontuação
         self.total_score = 0
         self.phase_score = 0
 
-        # PLAYER – spawn fixo
         self.spawn_x = WIDTH // 2
         self.spawn_y = HEIGHT // 2
+
         self.player = Player(self.spawn_x, self.spawn_y, self.all_sprites)
 
-        # Limites
         self.bounds = pygame.Rect(
             BORDER_THICKNESS,
             TOP_BORDER_THICKNESS,
@@ -50,10 +63,8 @@ class Game:
         )
         self.player.set_bounds(self.bounds)
 
-        # Variável para controlar o cooldown do som de HISS (para não tocar 60x por segundo)
         self.hiss_cooldown = 0 
 
-        # Primeira fase
         self.spawn_phase_entities()
 
         self.phase_delay = 3.0
@@ -63,7 +74,6 @@ class Game:
         self.running = True
         self.game_over = False
 
-    # -----------------------------------------------------------
     def random_pos_away_from_player(self, margin, min_distance=150):
         px, py = self.spawn_x, self.spawn_y
 
@@ -79,63 +89,63 @@ class Game:
             if dist((x, y), (px, py)) >= min_distance:
                 return x, y
 
-    # -----------------------------------------------------------
     def respawn_player(self):
         self.player.x = self.spawn_x
         self.player.y = self.spawn_y
         self.player.rect.center = (self.spawn_x, self.spawn_y)
 
-    # -----------------------------------------------------------
     def reset_phase(self):
-        """Reinicia a fase atual sem alterar nº da fase, vidas ou pontuação total."""
-        self.phase_score = 0  # zera pontuação da fase
+
+        self.phase_score = 0 
         self.respawn_player()
         self.spawn_phase_entities()
 
         self.waiting_phase_start = True
         self.phase_timer = self.phase_delay
 
-    # -----------------------------------------------------------
+    def reset_game(self):
+
+        self.phase = 1
+        self.lives = self.max_hits
+        self.total_score = 0
+        self.phase_score = 0
+        self.game_over = False
+        self.n_npcs = 11
+        self.reset_phase()
+
     def spawn_phase_entities(self):
         self.all_sprites.empty()
         self.chickens.empty()
 
-        # Player primeiro
         self.all_sprites.add(self.player)
 
         dogs = self.n_npcs // 3
         blacks = self.n_npcs // 3
         oranges = self.n_npcs - dogs - blacks
 
-        # Dobermanns
         for _ in range(dogs):
             x, y = self.random_pos_away_from_player(80)
             npc = DobermannNPC(x, y, self.all_sprites)
             npc.player = self.player
 
-        # Gatos pretos
         for _ in range(blacks):
             x, y = self.random_pos_away_from_player(60)
             BlackCatNPC(x, y, self.all_sprites)
 
-        # Gatos laranjas
         for _ in range(oranges):
             x, y = self.random_pos_away_from_player(60)
             OrangeCatNPC(x, y, self.all_sprites)
 
-        # Galinhas
         for _ in range(self.base_chickens):
             x, y = self.random_pos_away_from_player(40)
             Chicken(x, y, [self.all_sprites, self.chickens])
 
-        # bounds
         for s in self.all_sprites:
             if hasattr(s, "set_bounds"):
                 s.set_bounds(self.bounds)
 
-    # -----------------------------------------------------------
     def next_phase(self):
-        self.total_score += self.phase_score  # agrega pontos ganhos
+        self.total_score += self.phase_score  
         self.phase_score = 0
 
         self.phase += 1
@@ -147,7 +157,6 @@ class Game:
         self.waiting_phase_start = True
         self.phase_timer = self.phase_delay
 
-    # -----------------------------------------------------------
     def apply_bark_knockback(self):
         if not self.player.is_barking:
             return
@@ -175,14 +184,11 @@ class Game:
                 ent.y = new_y
                 ent.rect.center = (ent.x, ent.y)
 
-    # -----------------------------------------------------------
     def check_cat_proximity_sound(self, dt):
-        """Verifica se há algum gato perto para tocar o Hiss"""
-        # Diminui o cooldown se ele for maior que 0
+
         if self.hiss_cooldown > 0:
             self.hiss_cooldown -= dt
         
-        # Se ainda estiver em cooldown, não checa nada
         if self.hiss_cooldown > 0:
             return
 
@@ -190,18 +196,16 @@ class Game:
         cat_nearby = False
 
         for entity in self.all_sprites:
-            # Verifica se é instância de gato (Preto ou Laranja)
             if isinstance(entity, BlackCatNPC) or isinstance(entity, OrangeCatNPC):
                 d = dist((px, py), (entity.x, entity.y))
                 if d < 60:
                     cat_nearby = True
-                    break # Se achou um, já basta
+                    break 
         
         if cat_nearby:
             self.sound_manager.play_hiss()
-            self.hiss_cooldown = 2.0  # Só toca de novo após 2 segundos para não 'travar' o som
+            self.hiss_cooldown = 2.0 
 
-    # -----------------------------------------------------------
     def handle_chicken_collisions(self):
         for chicken in list(self.chickens):
             for entity in self.all_sprites:
@@ -217,7 +221,6 @@ class Game:
         if len(self.chickens) == 0:
             self.next_phase()
 
-    # -----------------------------------------------------------
     def handle_player_entity_collisions(self):
         if self.waiting_phase_start:
             return
@@ -231,64 +234,146 @@ class Game:
                 if not self.player.is_hurt:
                     self.player.hurt()
                     self.lives -= 1
-                    
-                    # TOCA O SOM DE DANO / REINÍCIO
                     self.sound_manager.play_hurt()
 
-                # sem vidas -> game over
                 if self.lives <= 0:
                     self.game_over = True
                 else:
-                    self.reset_phase()   # reinicia a fase atual
-
+                    self.reset_phase() 
                 return
 
-    # -----------------------------------------------------------
     def draw_score(self):
         txt = f"{self.total_score + self.phase_score:06d} | Fase {self.phase} | Vidas: {self.lives}"
-        surf = self.font.render(txt, True, (255, 255, 255))
+        surf = self.font.render(txt, True, WHITE)
         self.screen.blit(surf, (12, 6))
 
-    # -----------------------------------------------------------
     def show_game_over(self):
+
+        if self.has_background:
+            self.screen.blit(self.background, (0, 0))
+        else:
+            self.screen.fill(BACKGROUND_COLOR)
+            
         text = self.big_font.render("GAME OVER", True, (255, 80, 80))
         rect = text.get_rect(center=(WIDTH//2, HEIGHT//2))
         self.screen.blit(text, rect)
-        pygame.display.flip()
-        pygame.time.wait(2500)
+   
+        subtext = self.font.render("Pressione ESC para o Menu", True, WHITE)
+        subrect = subtext.get_rect(center=(WIDTH//2, HEIGHT//2 + 60))
+        self.screen.blit(subtext, subrect)
 
-    # -----------------------------------------------------------
+        pygame.display.flip()
+
+        waiting = True
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    waiting = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.in_menu = True
+                        self.game_over = False
+                        waiting = False
+
+    def update_menu_animation(self, dt):
+
+        if self.menu_player.x > WIDTH - 50:
+            self.menu_player.dx = -1
+        elif self.menu_player.x < 50:
+            self.menu_player.dx = 1 
+        
+        self.menu_sprites.update(dt)
+
+    def draw_menu(self):
+
+        if self.has_background:
+            self.screen.blit(self.background, (0, 0))
+        else:
+            self.screen.fill(BACKGROUND_COLOR)
+
+
+        title_surf = self.title_font.render("Caramel Adventures", True, (255, 165, 0)) 
+
+        title_shadow = self.title_font.render("Caramel Adventures", True, BLACK)
+        title_rect = title_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 150))
+        self.screen.blit(title_shadow, (title_rect.x + 3, title_rect.y + 3))
+        self.screen.blit(title_surf, title_rect)
+
+        self.menu_sprites.draw(self.screen)
+
+        mouse_pos = pygame.mouse.get_pos()
+        color = BUTTON_HOVER_COLOR if self.play_button.collidepoint(mouse_pos) else BUTTON_COLOR
+        
+        pygame.draw.rect(self.screen, color, self.play_button, border_radius=12)
+        pygame.draw.rect(self.screen, WHITE, self.play_button, 2, border_radius=12) 
+
+        play_text = self.big_font.render("JOGAR", True, WHITE)
+        play_rect = play_text.get_rect(center=self.play_button.center)
+        self.screen.blit(play_text, play_rect)
+
+        credits_text = "Criado por: Ranielly Barroso & Luiza Batista"
+        credits_surf = self.font.render(credits_text, True, WHITE)
+        credits_shadow = self.font.render(credits_text, True, BLACK)
+        credits_rect = credits_surf.get_rect(center=(WIDTH//2, HEIGHT - 80))
+        self.screen.blit(credits_shadow, (credits_rect.x+1, credits_rect.y+1))
+        self.screen.blit(credits_surf, credits_rect)
+
+        uni_text = "EST - UEA"
+        uni_surf = self.font.render(uni_text, True, (200, 200, 200))
+        uni_shadow = self.font.render(uni_text, True, BLACK)
+        uni_rect = uni_surf.get_rect(center=(WIDTH//2, HEIGHT - 40))
+        self.screen.blit(uni_shadow, (uni_rect.x+1, uni_rect.y+1))
+        self.screen.blit(uni_surf, uni_rect)
+
+        pygame.display.flip()
+
     def run(self):
         while self.running:
             dt = self.clock.tick(FPS) / 1000
-
-            # Atualiza sons automáticos (barks e meows a cada 5s)
             self.sound_manager.update()
+
+            if self.in_menu:
+                self.update_menu_animation(dt)
+                self.draw_menu()
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        self.running = False
+                    
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1: 
+                            if self.play_button.collidepoint(event.pos):
+                                self.in_menu = False
+                                self.reset_game() 
+                continue
 
             if self.game_over:
                 self.show_game_over()
-                self.running = False
                 continue
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
+                
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.in_menu = True
 
                 if not self.waiting_phase_start and event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.player.bark()
-                        # TOCA O SOM DO LATIDO DO PLAYER
                         self.sound_manager.play_player_bark()
 
-            # --------------------------------------------------
-            #           TELA DE ESPERA DA FASE
-            # --------------------------------------------------
             if self.waiting_phase_start:
                 self.phase_timer -= dt
 
-                self.screen.fill((30, 30, 30))
-                pygame.draw.rect(self.screen, (255,255,255), self.bounds, 2)
+                if self.has_background:
+                    self.screen.blit(self.background, (0, 0))
+                else:
+                    self.screen.fill(BACKGROUND_COLOR)
 
+                pygame.draw.rect(self.screen, WHITE, self.bounds, 2)
                 for s in self.all_sprites:
                     self.screen.blit(s.image, s.rect)
 
@@ -306,20 +391,18 @@ class Game:
                     self.waiting_phase_start = False
                 continue
 
-            # --------------------------------------------------
-            #                   GAMEPLAY
-            # --------------------------------------------------
             self.apply_bark_knockback()
             self.all_sprites.update(dt)
-            
-            # Verifica a proximidade dos gatos para o som HISS
             self.check_cat_proximity_sound(dt)
-            
             self.handle_chicken_collisions()
             self.handle_player_entity_collisions()
 
-            self.screen.fill((30, 30, 30))
-            pygame.draw.rect(self.screen, (255,255,255), self.bounds, 2)
+            if self.has_background:
+                self.screen.blit(self.background, (0, 0))
+            else:
+                self.screen.fill(BACKGROUND_COLOR)
+
+            pygame.draw.rect(self.screen, WHITE, self.bounds, 2)
             self.draw_score()
             self.all_sprites.draw(self.screen)
             pygame.display.flip()
